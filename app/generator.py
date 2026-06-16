@@ -1,48 +1,84 @@
-"""Demo-ответ: top-k чанки -> текст + источники (без внешней LLM)."""
-
-from app.config import TOP_K
-from app.prompts import MIN_SCORE, REFUSAL_EMPTY_QUESTION, REFUSAL_NO_CONTEXT
-from app.retriever import Retriever
+"""Answer generator that uses retrieved chunks as context."""
+from typing import List, Dict, Any
 
 
-def build_answer(hits: list[dict]) -> str:
-    """Формирует ответ только из чанков с score > 0."""
-    relevant = [h for h in hits if h["score"] >= MIN_SCORE]
-    if not relevant:
-        return REFUSAL_NO_CONTEXT
-
-    parts = ["На основании найденных фрагментов:"]
-    for i, hit in enumerate(relevant, 1):
-        parts.append(f"\n[{i}] {hit['name']}")
-        parts.append(f"doc_id={hit['doc_id']}, score={hit['score']:.2f}")
-        parts.append(hit["text"])
-    return "\n".join(parts)
+def format_context(chunks: List[Dict[str, Any]]) -> str:
+    """Format retrieved chunks into a context string."""
+    if not chunks:
+        return "Нет релевантных документов."
+    
+    context_parts = []
+    for i, chunk in enumerate(chunks, 1):
+        context_parts.append(f"[{i}] Источник: {chunk['name']}\n{chunk['text']}")
+    
+    return "\n\n---\n\n".join(context_parts)
 
 
-def format_sources(hits: list[dict]) -> list[dict]:
-    return [
-        {
-            "doc_id": hit["doc_id"],
-            "name": hit.get("name", ""),
-            "text": hit["text"],
-            "score": hit["score"],
+def generate_answer(question: str, chunks: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Generate an answer based on retrieved chunks.
+    In MVP, this is a demo answer without external LLM.
+    """
+    if not chunks:
+        return {
+            "answer": "Извините, я не могу ответить на этот вопрос, так как не нашёл релевантной информации в базе знаний. Пожалуйста, задайте вопрос по темам, которые есть в документации.",
+            "sources": [],
+            "has_context": False,
         }
-        for hit in hits
-    ]
-
-
-def ask(
-    question: str,
-    k: int = TOP_K,
-    retriever: Retriever | None = None,
-) -> dict:
-    """Вопрос -> ответ и список источников."""
-    if not question.strip():
-        return {"answer": REFUSAL_EMPTY_QUESTION, "sources": []}
-
-    r = retriever or Retriever()
-    hits = r.search(question.strip(), k=k)
+    
+    # Demo answer: select the best chunk and provide it as context
+    best_chunk = chunks[0]
+    
+    # Create a simple answer based on the retrieved content
+    answer = f"На основе найденной информации из документа «{best_chunk['name']}»:\n\n{best_chunk['text']}"
+    
+    # If multiple chunks, add note
+    if len(chunks) > 1:
+        answer += f"\n\n(Также найдено ещё {len(chunks) - 1} релевантных фрагментов.)"
+    
     return {
-        "answer": build_answer(hits),
-        "sources": format_sources(hits),
+        "answer": answer,
+        "sources": chunks,
+        "has_context": True,
     }
+
+
+def generate_with_llm(question: str, chunks: List[Dict[str, Any]], api_key: str = None) -> Dict[str, Any]:
+    """
+    Generate answer using an LLM (OpenAI-compatible API).
+    This is an improvement over the demo answer.
+    """
+    if not api_key:
+        return generate_answer(question, chunks)
+    
+    try:
+        import openai
+        
+        if not chunks:
+            return {
+                "answer": "Извините, я не могу ответить на этот вопрос, так как не нашёл релевантной информации.",
+                "sources": [],
+                "has_context": False,
+            }
+        
+        context = format_context(chunks)
+        
+        openai.api_key = api_key
+        
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "Ты полезный ассистент. Отвечай только на основе предоставленного контекста. Если ответа нет в контексте, скажи, что не знаешь."},
+                {"role": "user", "content": f"Контекст:\n{context}\n\nВопрос: {question}\n\nОтвет:"}
+            ],
+            temperature=0.3,
+        )
+        
+        return {
+            "answer": response.choices[0].message.content,
+            "sources": chunks,
+            "has_context": True,
+        }
+    except Exception as e:
+        print(f"LLM error: {e}")
+        return generate_answer(question, chunks)

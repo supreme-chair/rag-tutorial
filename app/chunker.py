@@ -1,129 +1,105 @@
-"""Chunking: documents.jsonl → chunks.jsonl."""
-
+"""Chunk documents into smaller pieces."""
 import json
 from pathlib import Path
+from typing import List, Dict, Any
+import sys
 
-from app.config import CHUNK_MAX_CHARS, CHUNK_OVERLAP, DOCUMENTS_JSONL, CHUNKS_JSONL
-
-
-def split_paragraphs(text: str) -> list[str]:
-    """Разбивает текст на непустые абзацы."""
-    return [p.strip() for p in text.split("\n\n") if p.strip()]
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from app.config import PROCESSED_DATA_DIR, CHUNK_MAX_CHARS, CHUNK_OVERLAP
 
 
-def split_long_text(text: str, max_chars: int) -> list[str]:
-    """Длинный абзац без переносов — жёсткая нарезка; overlap добавляется позже."""
-    if len(text) <= max_chars:
-        return [text]
-    parts: list[str] = []
-    start = 0
-    while start < len(text):
-        end = min(start + max_chars, len(text))
-        parts.append(text[start:end])
-        start = end
-    return parts
-
-
-def apply_overlap(chunks: list[str], overlap: int, max_chars: int) -> list[str]:
-    """Добавляет overlap из предыдущего чанка в начало следующего."""
-    if overlap <= 0 or len(chunks) <= 1:
-        return chunks
-    result = [chunks[0]]
-    for i in range(1, len(chunks)):
-        prefix = chunks[i - 1][-overlap:]
-        combined = prefix + chunks[i]
-        if len(combined) > max_chars:
-            combined = prefix + chunks[i][: max_chars - len(prefix)]
-        result.append(combined)
-    return result
-
-
-def chunk_text(
-    text: str,
+def chunk_documents(
+    input_file: Path = None,
+    output_file: Path = None,
     max_chars: int = CHUNK_MAX_CHARS,
     overlap: int = CHUNK_OVERLAP,
-) -> list[str]:
-    """Нарезка по абзацам с ограничением длины и overlap между чанками."""
-    if not text.strip():
-        return []
-
-    raw_chunks: list[str] = []
-    current_parts: list[str] = []
-
-    def flush() -> None:
-        if current_parts:
-            raw_chunks.append("\n\n".join(current_parts))
-            current_parts.clear()
-
-    for para in split_paragraphs(text):
-        for piece in split_long_text(para, max_chars):
-            candidate_parts = current_parts + [piece]
-            candidate = "\n\n".join(candidate_parts)
-            if len(candidate) <= max_chars:
-                current_parts = candidate_parts
-            else:
-                flush()
-                if len(piece) <= max_chars:
-                    current_parts = [piece]
-                else:
-                    raw_chunks.extend(split_long_text(piece, max_chars))
-
-    flush()
-    return apply_overlap(raw_chunks, overlap, max_chars)
-
-
-def chunk_document(doc: dict) -> list[dict]:
-    """Один документ → список чанков с метаданными."""
+) -> List[Dict[str, Any]]:
+    """Split documents into chunks by paragraphs with size limit."""
+    if input_file is None:
+        input_file = PROCESSED_DATA_DIR / "documents.jsonl"
+    if output_file is None:
+        output_file = PROCESSED_DATA_DIR / "chunks.jsonl"
+    
     chunks = []
-    for i, text in enumerate(chunk_text(doc["text"])):
-        chunks.append(
-            {
-                "chunk_id": f"{doc['doc_id']}_{i}",
-                "doc_id": doc["doc_id"],
-                "name": doc["name"],
-                "text": text,
-            }
-        )
+    
+    with open(input_file, "r", encoding="utf-8") as f:
+        for line in f:
+            doc = json.loads(line)
+            doc_id = doc["doc_id"]
+            name = doc["name"]
+            text = doc["text"]
+            source = doc.get("source_file", "unknown")
+            
+            # Split by paragraphs (double newline)
+            paragraphs = text.split("\n\n")
+            current_chunk = ""
+            chunk_idx = 0
+            
+            for para in paragraphs:
+                # If a single paragraph is too long, split by sentences
+                if len(para) > max_chars:
+                    # Simple sentence splitting (., !, ?)
+                    sentences = para.replace("! ", ". ").replace("? ", ". ").split(". ")
+                    for sent in sentences:
+                        if len(current_chunk) + len(sent) + 2 <= max_chars:
+                            if current_chunk:
+                                current_chunk += ". " + sent
+                            else:
+                                current_chunk = sent
+                        else:
+                            if current_chunk:
+                                chunks.append({
+                                    "chunk_id": f"{doc_id}_chunk_{chunk_idx:03d}",
+                                    "doc_id": doc_id,
+                                    "name": name,
+                                    "text": current_chunk.strip(),
+                                    "source": source,
+                                })
+                                chunk_idx += 1
+                            current_chunk = sent
+                else:
+                    # Normal paragraph
+                    if len(current_chunk) + len(para) + 2 <= max_chars:
+                        if current_chunk:
+                            current_chunk += "\n\n" + para
+                        else:
+                            current_chunk = para
+                    else:
+                        if current_chunk:
+                            chunks.append({
+                                "chunk_id": f"{doc_id}_chunk_{chunk_idx:03d}",
+                                "doc_id": doc_id,
+                                "name": name,
+                                "text": current_chunk.strip(),
+                                "source": source,
+                            })
+                            chunk_idx += 1
+                            # Keep overlap
+                            if overlap > 0 and len(current_chunk) > overlap:
+                                current_chunk = current_chunk[-overlap:] + "\n\n" + para
+                            else:
+                                current_chunk = para
+                        else:
+                            current_chunk = para
+            
+            # Don't forget the last chunk
+            if current_chunk:
+                chunks.append({
+                    "chunk_id": f"{doc_id}_chunk_{chunk_idx:03d}",
+                    "doc_id": doc_id,
+                    "name": name,
+                    "text": current_chunk.strip(),
+                    "source": source,
+                })
+    
+    # Write chunks to file
+    with open(output_file, "w", encoding="utf-8") as f:
+        for chunk in chunks:
+            f.write(json.dumps(chunk, ensure_ascii=False) + "\n")
+    
+    print(f"Created {len(chunks)} chunks from documents")
     return chunks
 
 
-def load_documents(path: Path) -> list[dict]:
-    documents = []
-    with path.open(encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                documents.append(json.loads(line))
-    return documents
-
-
-def write_chunks(chunks: list[dict], path: Path) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as f:
-        for chunk in chunks:
-            f.write(json.dumps(chunk, ensure_ascii=False) + "\n")
-
-
-def run(
-    input_path: Path = DOCUMENTS_JSONL,
-    output_path: Path = CHUNKS_JSONL,
-) -> int:
-    if not input_path.exists():
-        raise FileNotFoundError(f"Не найден файл: {input_path}")
-
-    documents = load_documents(input_path)
-    all_chunks: list[dict] = []
-    for doc in documents:
-        all_chunks.extend(chunk_document(doc))
-
-    write_chunks(all_chunks, output_path)
-    return len(all_chunks)
-
-
-def main() -> None:
-    count = run()
-    print(f"Записано {count} чанков -> {CHUNKS_JSONL}")
-
-
 if __name__ == "__main__":
-    main()
+    chunk_documents()

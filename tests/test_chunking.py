@@ -1,55 +1,85 @@
-"""Тесты нарезки текста на чанки."""
+import pytest
+import json
+import tempfile
+from pathlib import Path
 
-from app.chunker import chunk_document, chunk_text, run
-from app.config import CHUNK_MAX_CHARS, CHUNK_OVERLAP, CHUNKS_JSONL
-
-
-def test_chunk_text_respects_max_size():
-    text = "Абзац один.\n\n" + "слово " * 200
-    chunks = chunk_text(text, max_chars=400, overlap=50)
-    assert chunks
-    assert all(len(c) <= 400 for c in chunks)
+from app.chunker import chunk_documents
 
 
-def test_chunk_text_splits_by_paragraphs():
-    text = "Первый абзац про безработицу.\n\nВторой абзац про инфляцию."
-    chunks = chunk_text(text, max_chars=400, overlap=50)
-    assert len(chunks) == 1
-    assert "безработицу" in chunks[0]
-    assert "инфляцию" in chunks[0]
+def test_chunking_creates_chunks():
+    """Test that chunking creates chunks from documents."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp = Path(tmpdir)
+        input_file = tmp / "documents.jsonl"
+        output_file = tmp / "chunks.jsonl"
+        
+        # Create test document
+        with open(input_file, "w", encoding="utf-8") as f:
+            doc = {
+                "doc_id": "doc_0001",
+                "name": "Test Doc",
+                "text": "First paragraph.\n\nSecond paragraph with more text.",
+                "source_file": "test"
+            }
+            f.write(json.dumps(doc, ensure_ascii=False) + "\n")
+        
+        # Run chunking
+        chunks = chunk_documents(input_file, output_file, max_chars=1000, overlap=50)
+        
+        assert len(chunks) > 0
+        assert output_file.exists()
+        
+        # Check chunk structure
+        for chunk in chunks:
+            assert "chunk_id" in chunk
+            assert "doc_id" in chunk
+            assert "text" in chunk
+            assert chunk["doc_id"] == "doc_0001"
 
 
-def test_chunk_text_overlap_between_chunks():
-    para1 = "А" * 300
-    para2 = "Б" * 300
-    text = f"{para1}\n\n{para2}"
-    chunks = chunk_text(text, max_chars=400, overlap=50)
-    assert len(chunks) >= 2
-    assert chunks[1].startswith(chunks[0][-50:])
+def test_chunking_respects_max_chars():
+    """Test that chunks don't exceed max_chars."""
+    long_text = "This is a very long sentence. " * 100
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp = Path(tmpdir)
+        input_file = tmp / "documents.jsonl"
+        output_file = tmp / "chunks.jsonl"
+        
+        with open(input_file, "w", encoding="utf-8") as f:
+            doc = {
+                "doc_id": "doc_0001",
+                "name": "Long Doc",
+                "text": long_text,
+                "source_file": "test"
+            }
+            f.write(json.dumps(doc, ensure_ascii=False) + "\n")
+        
+        chunks = chunk_documents(input_file, output_file, max_chars=500, overlap=50)
+        
+        for chunk in chunks:
+            assert len(chunk["text"]) <= 500 + 50  # Allow small overlap overhead
 
 
-def test_chunk_document_has_doc_id():
-    doc = {
-        "doc_id": "42",
-        "name": "Тестовый датасет",
-        "text": "Описание переменных: год, инфляция, ВВП.",
-    }
-    chunks = chunk_document(doc)
-    assert len(chunks) == 1
-    assert chunks[0]["doc_id"] == "42"
-    assert chunks[0]["chunk_id"] == "42_0"
-    assert chunks[0]["name"] == "Тестовый датасет"
-
-
-def test_run_creates_chunks_jsonl(tmp_path):
-    docs = tmp_path / "documents.jsonl"
-    docs.write_text(
-        '{"doc_id": "0", "name": "A", "text": "Короткий текст."}\n',
-        encoding="utf-8",
-    )
-    out = tmp_path / "chunks.jsonl"
-    count = run(input_path=docs, output_path=out)
-    assert count == 1
-    assert out.exists()
-    line = out.read_text(encoding="utf-8").strip()
-    assert '"doc_id": "0"' in line
+def test_chunking_preserves_metadata():
+    """Test that chunking preserves document metadata."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp = Path(tmpdir)
+        input_file = tmp / "documents.jsonl"
+        output_file = tmp / "chunks.jsonl"
+        
+        with open(input_file, "w", encoding="utf-8") as f:
+            doc = {
+                "doc_id": "doc_0001",
+                "name": "Test Document",
+                "text": "Some text for testing.",
+                "source_file": "test_source"
+            }
+            f.write(json.dumps(doc, ensure_ascii=False) + "\n")
+        
+        chunks = chunk_documents(input_file, output_file, max_chars=1000, overlap=50)
+        
+        for chunk in chunks:
+            assert chunk["doc_id"] == "doc_0001"
+            assert chunk["name"] == "Test Document"
+            assert chunk["source"] == "test_source"

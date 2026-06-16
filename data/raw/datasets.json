@@ -1,49 +1,54 @@
-{
+﻿{
   "datasets": [
     {
-      "id": 0,
-      "name": "Взыскание долга — попытки взыскать несуществующий долг (Ability Recovery Services)",
-      "text": "Продукт: взыскание долга. Проблема: попытки взыскать долг, который не должен быть оплачен. Подпроблема: долг уже был погашен. Компания: Ability Recovery Services, LLC. Штат: Джорджия.\n\nТекст жалобы потребителя:\nНачиная с XX/XX/XXXX, я стала получать звонки от коллекторского агентства Ability Recovery Solutions по поводу медицинского счёта, который, по их словам, не был оплачен. Я объяснила, что с XX/XX/XXXX одобрена на SSI и Medicaid; Medicaid задним числом действует с XX/XX/XXXX. Мне посоветовали обратиться в больницы, чтобы они отозвали счета из коллекторов и подали их в Medicaid. Больница подтвердила, что счета отозваны, оплачены и закрыты. Тем не менее звонки продолжились: когда я говорила, что долг погашен, операторы грубили и требовали доказательства. При попытках обсудить ситуацию они угрожали по телефону. Больница заявила, что взыскание неправомерно и пыталась связаться с коллекторами, но те отказались убрать запись из кредитной истории, продолжали звонить по несколько раз в день, угрожали судом и испортили мой кредитный рейтинг. По запросу они так и не прислали документов, подтверждающих долг."
+      "name": "Python Programming Language",
+      "text": "Python is a high-level, interpreted programming language created by Guido van Rossum in 1991. It emphasizes code readability and simplicity. Python supports multiple programming paradigms including object-oriented, procedural, and functional programming.",
+      "source": "it_blog"
     },
     {
-      "id": 1,
-      "name": "Студенческий кредит — трудности с погашением (NRA Group)",
-      "text": "Продукт: студенческий кредит. Проблема: трудности с погашением займа. Подпроблема: нет гибких вариантов погашения. Компания: NRA Group, LLC. Штат: Невада.\n\nТекст жалобы потребителя:\nЯ выполняла требования программы «ability to benefit» в точности по закону. Они намеренно исказили результаты проверки, чтобы продолжать удерживать деньги из моей зарплаты. Я как раз тот человек, для которого эта программа предназначена, но закон проигнорировали и продолжают разорять меня финансово. Нужна проверка Министерства образования и коллекторского агентства, которое они используют. Если рассмотрите моё дело, увидите, что я соответствовала требованиям. Прошу проверить мою жалобу и действия тех, кто мошенничеством отказал в удовлетворении заявки."
+      "name": "Docker Container Platform",
+      "text": "Docker is a platform for containerization that allows you to package applications with all dependencies into isolated containers. Docker containers are lightweight and ensure consistent behavior across different environments.",
+      "source": "it_blog"
     },
     {
-      "id": 2,
-      "name": "Ипотека — закрытие ипотечной сделки (Citibank)",
-      "text": "Продукт: ипотека. Проблема: закрытие ипотечной сделки. Компания: CITIBANK, N.A. Штат: Невада.\n\nТекст жалобы потребителя:\nМне устно обещали списать пункты (points), чтобы получить заявленную ставку от команды ипотечных агентов Citibank. За неделю до закрытия сделки сказали, что скидки уже применены и осталось два варианта: 1) платить более высокий процент или 2) использовать пункты для снижения ставки до первоначальной котировки (лок на 60 дней). Я выбрала второй вариант и заплатила около {$1500.00}, чтобы зафиксировать низкую ставку, хотя агент обещал, что пункты спишут. Кредит с тех пор передан другому кредитору (XXXX)."
+      "name": "REST API Architecture",
+      "text": "REST API is an architectural style for web services using HTTP methods: GET, POST, PUT, DELETE. Responses are typically in JSON format. RESTful services should be stateless, meaning each request contains all necessary information.",
+      "source": "it_blog"
     },
     {
-      "id": 3,
-      "name": "Кредитная или предоплаченная карта — комиссии и проценты (AAFES)",
-      "text": "Продукт: кредитная или предоплаченная карта. Проблема: комиссии или проценты. Подпроблема: проблема с комиссиями. Компания: Army and Air Force Exchange Service. Штат: Техас.\n\nТекст жалобы потребителя:\nРечь о кредитном счёте XXXX XXXX XXXX, которым управляет Army and Air Force Exchange Service (AAFES). После 21 года службы я вышел в отставку, не нашёл работу и отстал от платежей в XXXX году. AAFES начала удерживать долг из моей военной пенсии. Удержания были в XXXX и XXXX, затем прекратились. В XX/XX/XXXX пришло письмо о возобновлении удержаний; указана сумма задолженности {$11000.00}. Я переписывался с AAFES: долг, по моим данным, погашен, но удержания из пенсии и налоговых возвратов продолжались. Меня направили к коллектору XXXX, но письменно не уведомили о привлечении агентства. Неясно, какую роль играет XXXX, если удержания идут через AAFES. Ответ на запрос к XXXX получил только после двух обращений (более 30 дней). В XX/XX/XXXX отправил письмо XXXX с копией AAFES: приложил документы пенсионного агента и выписки, показав, что долг погашен с переплатой. Просил прекратить удержания, вернуть переплату и подтвердить полномочия XXXX. Ответа в течение 30 рабочих дней не было. Прошу помощи до обращения в FTC: пусть AAFES рассмотрит письмо от XX/XX/XXXX, прекратит удержания и возвратит переплату."
+      "name": "Machine Learning Overview",
+      "text": "Machine Learning is a subset of Artificial Intelligence that enables systems to learn from data without explicit programming. Types include supervised learning, unsupervised learning, and reinforcement learning.",
+      "source": "it_blog"
     },
     {
-      "id": 4,
-      "name": "Расчётный или сберегательный счёт — закрытие счёта (Wells Fargo)",
-      "text": "Продукт: расчётный или сберегательный счёт. Проблема: закрытие счёта. Подпроблема: не удаётся закрыть счёт. Компания: WELLS FARGO & COMPANY. Штат: Северная Каролина.\n\nТекст жалобы потребителя:\nXX/XX/XXXX получил письмо от господина XXXX XXXX из исполнительного офиса Wells Fargo Merchant Services о том, что мой торговый счёт (окончание XXXX) закрыт. Ответ относился к прежней жалобе в CFPB № XXXX, поданной в XX/XX/XXXX. С тех пор я получаю письма, что счёт всё ещё открыт; последнее датировано XX/XX/XXXX."
+      "name": "Git Version Control System",
+      "text": "Git is a distributed version control system for tracking changes in code. Basic commands include add, commit, push, pull, branch, and merge. Git allows multiple developers to work on the same project simultaneously.",
+      "source": "it_blog"
     },
     {
-      "id": 5,
-      "name": "Денежный перевод — прочая проблема с услугой (Xoom)",
-      "text": "Продукт: денежный перевод, виртуальная валюта или денежный сервис. Проблема: прочая проблема с услугой. Компания: XOOM CORPORATION. Штат: Иллинойс.\n\nТекст жалобы потребителя:\nРанее я подал жалобу в CFPB: компания ответила, что предотвратила отправку данных чужого клиента мне. Однако XX/XX/XXXX снова получил письмо, что их клиент получил перевод от кого-то, и снова прислали все детали транзакции по счёту, который мне не принадлежит (транзакция XXXX). Xoom должна немедленно удалить мой email из систем. Адрес не зарегистрирован на XXXX XXXX XXXX — получать детали чужих переводов нельзя, это нарушение конфиденциальности. Это уже третья такая транзакция; ранее были XXXX от XX/XX/2019 и XXXX от XX/XX/2019."
+      "name": "SQL Databases",
+      "text": "SQL (Structured Query Language) is used to manage relational databases. Common operations include SELECT, INSERT, UPDATE, and DELETE. SQL databases use tables with rows and columns to store data.",
+      "source": "it_blog"
     },
     {
-      "id": 6,
-      "name": "Краткосрочный займ — неверная информация в отчёте (Local Management)",
-      "text": "Продукт: краткосрочный, залоговый или персональный займ. Проблема: неверная информация в отчёте. Подпроблема: неверный статус счёта. Компания: Local Management, LLC. Штат: Южная Каролина.\n\nТекст жалобы потребителя:\nXX/XX/2018 я внес первый платёж XXXX; представитель заверил, что просрочки в кредитной истории не будет, если уложиться в XXXX дней. Платёж XXXX от XX/XX/XXXX отображён, но статус показан как просрочка 30–60 дней. Руководство ответило через неделю; XXXX был груб и сказал, что при своевременной оплате проблем не было. Он потребовал документы, которые я не мог предоставить, продолжал хамить — я заявила о жалобе. Прошу убрать негативные отметки Local Finance; готова полностью погасить займ в пятницу. Я клиент много лет и никогда не опаздывала более чем на 30 дней. Local Finance — компания XXXX XXXX XXXX XXXX, XXXX, SC XXXX XXXX."
+      "name": "React JavaScript Library",
+      "text": "React is a JavaScript library for building user interfaces developed by Facebook. It uses a component-based architecture and virtual DOM for efficient updates. React Hooks like useState and useEffect manage state and side effects.",
+      "source": "it_blog"
     },
     {
-      "id": 7,
-      "name": "Кредитная карта — просроченный счёт (Capital One)",
-      "text": "Продукт: кредитная карта. Проблема: просроченный счёт. Компания: CAPITAL ONE FINANCIAL CORPORATION. Штат: Джорджия.\n\nТекст жалобы потребителя:\nМногократно оспаривала счёт Capital One; по сей день они сообщают о нём дольше 7 лет с даты первой просрочки. По телефону сказали, что будут сообщать о нём 10 лет. Бюро кредитных историй указывают на 7 лет. Запрашивала историю платежей — не предоставили. Счёт открыт в XXXX, просрочки с XXXX XXXX (данные от коллекторского отдела). Прошу удалить запись из Experian по правилам FCRA: в большинстве случаев негативная информация старше семи лет не должна сообщаться."
+      "name": "FastAPI Web Framework",
+      "text": "FastAPI is a modern web framework for building APIs with Python. It automatically generates OpenAPI documentation, supports async operations, and provides data validation through Pydantic.",
+      "source": "it_blog"
     },
     {
-      "id": 8,
-      "name": "Банковский счёт — открытие, закрытие и управление (U.S. Bank)",
-      "text": "Продукт: банковский счёт или услуга. Проблема: открытие, закрытие или управление счётом. Компания: U.S. BANCORP. Штат: Иллинойс.\n\nТекст жалобы потребителя:\nДепозитные счета (CD и money market) открыты одним владельцем — XXXX XXXX; XXXX XXXX закрыт. Счета перешли к XXXX XXXX, затем в U.S. Bank. За это время к счёту без моего ведома и согласия добавили второе имя. U.S. Bank отказывается исправить ошибку и предоставить карточки с подписями. Более шести месяцев пытаемся добиться ответа: обращались в executive office, в отдел мошенничества, к senior banker (XXXX XXXX XXXX). Одна сотрудница направила в филиал XXXX XXXX к менеджеру XXXX — я там никогда не обслуживался. Звонки и сообщения без ответа. Помощник менеджера филиала взяла мои данные, обещала перезвонить — не перезвонила. Ссылалась на «корпоративный офис» и письмо — ответа не было. С каждым звонком становилась враждебнее и заявила, что не обязана ничего сообщать письменно. В другом филиале менеджер обещала связаться на следующей неделе — не связалась; потом через сотрудника сообщили, что информации нет. Везде указывала на юридическую проблему: я НИКОГДА не уполномочивала другого человека на мои счета. Банк не признаёт ошибку, но разгласил неверные сведения, из-за чего возник судебный спор (XXXX)."
+      "name": "Kubernetes Orchestration",
+      "text": "Kubernetes is an open-source container orchestration platform that automates deployment, scaling, and management of containerized applications. It was originally developed by Google.",
+      "source": "it_blog"
+    },
+    {
+      "name": "RAG - Retrieval-Augmented Generation",
+      "text": "RAG is an approach to improve LLM responses by first retrieving relevant documents from a knowledge base, then providing them as context to the model. This reduces hallucinations and enables answering questions about specific data.",
+      "source": "it_blog"
     }
   ]
 }

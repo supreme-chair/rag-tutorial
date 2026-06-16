@@ -1,88 +1,74 @@
-"""Streamlit UI: вопрос -> фрагменты -> ответ -> источники."""
-
+"""Streamlit UI for RAG system."""
 import streamlit as st
+from pathlib import Path
+import sys
 
-from app.config import INDEX_CHUNKS_JSONL, MATRIX_NPZ, TOP_K, VECTORIZER_PKL
-from app.generator import ask
-from app.prompts import MIN_SCORE
-from app.retriever import Retriever
-
-DEMO_QUESTIONS = [
-    "Ипотека - закрытие ипотечной сделки",
-    "Какие переменные в датасете про безработицу?",
-    "За какой период данные об инфляции?",
-    "Как приготовить борщ?",
-]
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from app.retriever import search
+from app.generator import generate_answer
+from app.config import UI_TITLE, UI_ICON, RETRIEVAL_TOP_K
 
 
-def index_exists() -> bool:
-    return all(p.exists() for p in (VECTORIZER_PKL, MATRIX_NPZ, INDEX_CHUNKS_JSONL))
+st.set_page_config(page_title=UI_TITLE, page_icon=UI_ICON, layout="wide")
 
+st.title(f"{UI_ICON} {UI_TITLE}")
 
-@st.cache_resource
-def load_retriever() -> Retriever:
-    return Retriever()
+# Sidebar
+with st.sidebar:
+    st.header("⚙️ Настройки")
+    top_k = st.slider("Количество фрагментов (top-k)", 1, 10, RETRIEVAL_TOP_K)
+    show_scores = st.checkbox("Показывать оценки релевантности", value=True)
+    
+    st.header("📊 Статистика")
+    st.info("База знаний содержит статьи по IT-тематике: Python, ML, DevOps, базы данных, веб-разработка и др.")
+    
+    st.header("❓ Примеры вопросов")
+    st.markdown("""
+    - Что такое Python?
+    - Как работает Docker?
+    - Объясните REST API
+    - Что такое машинное обучение?
+    - Какие бывают базы данных?
+    """)
 
+# Main area
+col1, col2 = st.columns([2, 1])
 
-def render_chunk(i: int, src: dict, expanded: bool = True) -> None:
-    label = f"[{i}] doc_id={src['doc_id']} · score={src['score']:.4f}"
-    with st.expander(label, expanded=expanded):
-        st.markdown(f"**{src['name']}**")
-        st.text(src["text"])
+with col1:
+    question = st.text_area("💬 Задайте вопрос:", placeholder="Например: Что такое RAG?", height=100)
+    
+    if st.button("🔍 Найти ответ", type="primary"):
+        if question.strip():
+            with st.spinner("Поиск в базе знаний..."):
+                # Retrieve chunks
+                chunks = search(question, k=top_k)
+                
+                # Generate answer
+                result = generate_answer(question, chunks)
+                
+                # Display answer
+                st.markdown("### 📝 Ответ")
+                st.markdown(result["answer"])
+                
+                # Store in session state for sources display
+                st.session_state.last_chunks = result["sources"]
+                st.session_state.last_question = question
+        else:
+            st.warning("Пожалуйста, введите вопрос.")
 
+with col2:
+    st.markdown("### 📚 Источники")
+    if "last_chunks" in st.session_state and st.session_state.last_chunks:
+        for i, chunk in enumerate(st.session_state.last_chunks, 1):
+            with st.expander(f"📄 {chunk['name']}"):
+                st.markdown(f"**Фрагмент {i}**")
+                st.markdown(chunk['text'][:300] + "..." if len(chunk['text']) > 300 else chunk['text'])
+                if show_scores:
+                    st.caption(f"*Оценка релевантности: {chunk['score']}*")
+                st.caption(f"🔗 Источник: {chunk.get('source', 'unknown')} | ID: {chunk['doc_id']}")
+    else:
+        st.info("Ответ на вопрос появится здесь")
 
-def render_fragments(sources: list[dict]) -> None:
-    st.subheader("Найденные фрагменты (top-k)")
-    if not sources:
-        st.info("Фрагменты не найдены.")
-        return
-    for i, src in enumerate(sources, 1):
-        render_chunk(i, src, expanded=src["score"] >= MIN_SCORE)
-
-
-def render_sources(sources: list[dict]) -> None:
-    st.subheader("Источники")
-    if not sources:
-        st.info("Источники отсутствуют.")
-        return
-    for i, src in enumerate(sources, 1):
-        render_chunk(i, src, expanded=False)
-
-
-def main() -> None:
-    st.set_page_config(page_title="RAG Tutorial", layout="wide")
-    st.title("RAG Tutorial")
-    st.caption("Учебный RAG: TF-IDF + demo-ответ с источниками")
-
-    if not index_exists():
-        st.error(
-            "Индекс не собран. Сначала выполните:\n\n"
-            "`uv run python scripts/build_index.py`"
-        )
-        st.stop()
-
-    st.sidebar.header("Demo-вопросы")
-    for q in DEMO_QUESTIONS:
-        if st.sidebar.button(q, use_container_width=True):
-            st.session_state["question"] = q
-
-    question = st.text_input("Ваш вопрос", key="question")
-
-    if st.button("Спросить", type="primary"):
-        if not question.strip():
-            st.warning("Введите вопрос.")
-            st.stop()
-
-        with st.spinner("Поиск..."):
-            result = ask(question.strip(), k=TOP_K, retriever=load_retriever())
-
-        render_fragments(result["sources"])
-
-        st.subheader("Ответ")
-        st.text(result["answer"])
-
-        render_sources(result["sources"])
-
-
-if __name__ == "__main__":
-    main()
+# Footer
+st.markdown("---")
+st.caption("RAG система на TF-IDF + эмбеддингах. Данные: IT статьи (35+ документов).")

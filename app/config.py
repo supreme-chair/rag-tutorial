@@ -1,19 +1,28 @@
+"""Configuration for RAG system."""
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+# Project paths
+PROJECT_ROOT = Path(__file__).parent.parent
+DATA_DIR = PROJECT_ROOT / "data"
+RAW_DATA_DIR = DATA_DIR / "raw"
+PROCESSED_DATA_DIR = DATA_DIR / "processed"
+INDEX_DIR = DATA_DIR / "index"
 
-DATA_RAW = ROOT / "data" / "raw"
-DATA_PROCESSED = ROOT / "data" / "processed"
-DATA_INDEX = ROOT / "data" / "index"
+# Ensure directories exist
+for dir_path in [RAW_DATA_DIR, PROCESSED_DATA_DIR, INDEX_DIR]:
+    dir_path.mkdir(parents=True, exist_ok=True)
 
-RAW_DATASETS = DATA_RAW / "datasets.json"
-DOCUMENTS_JSONL = DATA_PROCESSED / "documents.jsonl"
-CHUNKS_JSONL = DATA_PROCESSED / "chunks.jsonl"
+# Chunking settings
+CHUNK_MAX_CHARS = 1000
+CHUNK_OVERLAP = 200
 
-VECTORIZER_PKL = DATA_INDEX / "vectorizer.pkl"
-MATRIX_NPZ = DATA_INDEX / "matrix.npz"
-INDEX_CHUNKS_JSONL = DATA_INDEX / "chunks.jsonl"
+# Retrieval settings
+RETRIEVAL_TOP_K = 5
+RETRIEVAL_SIMILARITY_THRESHOLD = 0.01
 
-TOP_K = 3
-CHUNK_MAX_CHARS = 400
-CHUNK_OVERLAP = 50
+# UI settings
+UI_TITLE = "RAG Assistant - Russian Tech Blog Posts"
+UI_ICON = "🤖"
+
+# Embedding model
+EMBEDDING_MODEL = "intfloat/multilingual-e5-small"  # Multilingual model with Russian support

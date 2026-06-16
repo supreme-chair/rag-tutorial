@@ -1,68 +1,121 @@
-"""Build TF-IDF index: ingest + chunk + fit + save."""
-
+"""Build TF-IDF index and embedding index."""
+import json
 import pickle
-import shutil
-import sys
 from pathlib import Path
-
-import scipy.sparse
+import sys
+import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sentence_transformers import SentenceTransformer
+import chromadb
 
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
-sys.path.insert(0, str(ROOT / "scripts"))
-
-from app.chunker import load_documents, run as chunk_run
-from app.config import (
-    CHUNKS_JSONL,
-    DATA_INDEX,
-    INDEX_CHUNKS_JSONL,
-    MATRIX_NPZ,
-    VECTORIZER_PKL,
-)
-from ingest import run as ingest_run
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from app.config import PROCESSED_DATA_DIR, INDEX_DIR, EMBEDDING_MODEL
 
 
-def build_tfidf(texts: list[str]) -> tuple[TfidfVectorizer, scipy.sparse.csr_matrix]:
-    vectorizer = TfidfVectorizer()
+def build_tfidf_index():
+    """Build and save TF-IDF index."""
+    chunks_file = PROCESSED_DATA_DIR / "chunks.jsonl"
+    if not chunks_file.exists():
+        print("Error: chunks.jsonl not found. Run chunking first.")
+        return False
+    
+    # Load chunks
+    chunks = []
+    texts = []
+    with open(chunks_file, "r", encoding="utf-8") as f:
+        for line in f:
+            chunk = json.loads(line)
+            chunks.append(chunk)
+            texts.append(chunk["text"])
+    
+    # Build TF-IDF
+    vectorizer = TfidfVectorizer(
+        max_features=5000,
+        stop_words=None,  # Russian stop words could be added
+        ngram_range=(1, 2),
+    )
     matrix = vectorizer.fit_transform(texts)
-    return vectorizer, matrix
-
-
-def save_index(
-    vectorizer: TfidfVectorizer,
-    matrix: scipy.sparse.csr_matrix,
-    chunks_path: Path = CHUNKS_JSONL,
-) -> int:
-    DATA_INDEX.mkdir(parents=True, exist_ok=True)
-
-    with VECTORIZER_PKL.open("wb") as f:
+    
+    # Save artifacts
+    with open(INDEX_DIR / "vectorizer.pkl", "wb") as f:
         pickle.dump(vectorizer, f)
-
-    scipy.sparse.save_npz(MATRIX_NPZ, matrix)
-    shutil.copy2(chunks_path, INDEX_CHUNKS_JSONL)
-    return matrix.shape[0]
-
-
-def run() -> int:
-    doc_count = ingest_run()
-    chunk_count = chunk_run()
-    chunks = load_documents(CHUNKS_JSONL)
-    texts = [c["text"] for c in chunks]
-
-    if not texts:
-        raise ValueError("Нет чанков для индексации")
-
-    vectorizer, matrix = build_tfidf(texts)
-    save_index(vectorizer, matrix)
-    print(f"Документов: {doc_count}, чанков: {chunk_count}, матрица: {matrix.shape}")
-    return chunk_count
+    
+    with open(INDEX_DIR / "matrix.npz", "wb") as f:
+        np.savez_compressed(f, data=matrix.data, indices=matrix.indices,
+                            indptr=matrix.indptr, shape=matrix.shape)
+    
+    # Save chunks metadata
+    with open(INDEX_DIR / "chunks.jsonl", "w", encoding="utf-8") as f:
+        for chunk in chunks:
+            f.write(json.dumps(chunk, ensure_ascii=False) + "\n")
+    
+    print(f"TF-IDF index built: {matrix.shape[0]} chunks, {matrix.shape[1]} features")
+    return True
 
 
-def main() -> None:
-    run()
-    print(f"Индекс сохранён -> {DATA_INDEX}")
+def build_embedding_index():
+    """Build and save embedding index using ChromaDB."""
+    chunks_file = PROCESSED_DATA_DIR / "chunks.jsonl"
+    if not chunks_file.exists():
+        print("Error: chunks.jsonl not found. Run chunking first.")
+        return False
+    
+    # Load chunks
+    chunks = []
+    texts = []
+    metadatas = []
+    ids = []
+    with open(chunks_file, "r", encoding="utf-8") as f:
+        for line in f:
+            chunk = json.loads(line)
+            chunks.append(chunk)
+            texts.append(chunk["text"])
+            metadatas.append({
+                "doc_id": chunk["doc_id"],
+                "name": chunk["name"],
+                "source": chunk["source"],
+            })
+            ids.append(chunk["chunk_id"])
+    
+    # Initialize ChromaDB
+    chroma_client = chromadb.PersistentClient(path=str(INDEX_DIR / "chroma_db"))
+    
+    # Delete existing collection if exists
+    try:
+        chroma_client.delete_collection("rag_chunks")
+    except:
+        pass
+    
+    collection = chroma_client.create_collection(name="rag_chunks")
+    
+    # Load embedding model
+    print(f"Loading embedding model: {EMBEDDING_MODEL}")
+    model = SentenceTransformer(EMBEDDING_MODEL)
+    
+    # Generate embeddings in batches
+    batch_size = 32
+    for i in range(0, len(texts), batch_size):
+        batch_texts = texts[i:i+batch_size]
+        batch_ids = ids[i:i+batch_size]
+        batch_metadatas = metadatas[i:i+batch_size]
+        
+        embeddings = model.encode(batch_texts, show_progress_bar=False)
+        
+        collection.add(
+            embeddings=embeddings.tolist(),
+            documents=batch_texts,
+            metadatas=batch_metadatas,
+            ids=batch_ids,
+        )
+        print(f"Added {len(batch_ids)} chunks to ChromaDB ({(i+len(batch_texts))}/{len(texts)})")
+    
+    print(f"Embedding index built with {len(texts)} chunks")
+    return True
 
 
 if __name__ == "__main__":
-    main()
+    print("Building TF-IDF index...")
+    build_tfidf_index()
+    print("\nBuilding embedding index...")
+    build_embedding_index()
+    print("\nAll indexes built successfully!")
